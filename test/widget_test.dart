@@ -1,30 +1,19 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:yes_app_demo/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('登入頁顯示標題、環境切換與登入按鈕', (tester) async {
     await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('我家環境通'), findsOneWidget);
+    expect(find.text('本機'), findsOneWidget);
+    expect(find.text('測試機'), findsOneWidget);
+    expect(find.text('登入'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('AppEnv：cookie domain 取自 WebView 網址', () {
+    expect(AppEnv.dev.cookieDomain, 'localhost');
+    expect(AppEnv.test.cookieDomain, 'testyesme.pst.com.tw');
+    expect(AppEnv.test.webUrl, 'https://testyesme.pst.com.tw/?m=1');
   });
 }
