@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -285,13 +286,29 @@ class _HomePageState extends State<HomePage> {
             perm == LocationPermission.deniedForever) {
           result = {'ok': false, 'error': 'permission_denied'};
         } else {
-          final pos = await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.high,
-              timeLimit: Duration(seconds: 8),
-            ),
-          );
-          result = {'ok': true, 'lat': pos.latitude, 'lng': pos.longitude};
+          // 先取最後已知位置（快、可能過舊），再取目前位置；
+          // 目前位置逾時或失敗時，退而使用最後已知位置
+          final last = await Geolocator.getLastKnownPosition();
+          Position? pos;
+          try {
+            pos = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.high,
+                timeLimit: Duration(seconds: 15),
+              ),
+            );
+          } on TimeoutException {
+            pos = null;
+          }
+          final fix = pos ?? last;
+          result = fix == null
+              ? {'ok': false, 'error': 'failed'}
+              : {
+                  'ok': true,
+                  'lat': fix.latitude,
+                  'lng': fix.longitude,
+                  'source': pos != null ? 'current' : 'lastKnown',
+                };
         }
       }
     } catch (e) {
