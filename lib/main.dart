@@ -338,12 +338,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// 清除 WebView cookie 並回到登入頁
-  Future<void> _logout() async {
+  /// 清除 WebView cookie 並回到登入頁；[message] 為回到登入頁後顯示的提示
+  Future<void> _logout({String message = '登入已逾期，請重新登入'}) async {
     await WebViewCookieManager().clearCookies();
     if (!mounted) return;
     ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('登入已逾期，請重新登入')));
+        .showSnackBar(SnackBar(content: Text(message)));
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
       (_) => false,
@@ -363,20 +363,71 @@ class _HomePageState extends State<HomePage> {
     await _web.loadRequest(Uri.parse(widget.env.webUrl));
   }
 
+  /// 上方標題列：左側標題、右側設置按鈕（展開選單內提供登出）
+  Widget _buildTitleBar() {
+    final theme = Theme.of(context);
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.only(left: 16, right: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(bottom: BorderSide(color: theme.dividerColor)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '我家環境通',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          PopupMenuButton<String>(
+            tooltip: '設置',
+            icon: const Icon(Icons.settings),
+            onSelected: (value) {
+              if (value == 'logout') _logout(message: '已登出');
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, size: 20),
+                    SizedBox(width: 8),
+                    Text('登出'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // IndexedStack 保留 WebView 狀態（切換 tab 不會重新載入）
       body: SafeArea(
-        child: IndexedStack(
-          index: _index,
+        child: Column(
           children: [
-            WebViewWidget(controller: _web),
-            _PlaceholderPage(title: '環境儀表板', account: widget.account),
-            _PlaceholderPage(
-              title: '環境教育與政策',
-              account: widget.account,
-              mood: RobotMood.thinking,
+            _buildTitleBar(),
+            Expanded(
+              child: IndexedStack(
+                index: _index,
+                children: [
+                  WebViewWidget(controller: _web),
+                  _PlaceholderPage(title: '環境儀表板', account: widget.account),
+                  _PlaceholderPage(
+                    title: '環境教育與政策',
+                    account: widget.account,
+                    mood: RobotMood.thinking,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
