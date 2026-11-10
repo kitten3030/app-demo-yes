@@ -352,6 +352,9 @@ class _HomePageState extends State<HomePage> {
 
   /// 先把登入 token 以 jwt_token cookie 寫入 WebView，網頁端即視為已登入
   Future<void> _initWeb() async {
+    // 清除 WebView HTTP 快取（不影響 cookie）：伺服器更新前端後，舊的 index.html 可能被快取，
+    // 指向已被換掉的檔名而整頁空白
+    await _web.clearCache();
     await WebViewCookieManager().setCookie(
       WebViewCookie(
         name: 'jwt_token',
