@@ -1,0 +1,15 @@
+{
+  "appName": "我家環境通",
+  "description": "雲林縣環境監測助手",
+  "version": "1.0.1",
+  "build": "2",
+  "port": 8080,
+  "android": {
+    "file": "files/app-release.apk",
+    "packageId": "tw.com.pst.yes_app_demo"
+  },
+  "ios": {
+    "file": "files/app-release.ipa",
+    "bundleId": "tw.com.pst.yesAppDemo"
+  }
+}

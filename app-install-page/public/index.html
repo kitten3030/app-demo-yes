@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>App 安裝</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <h1 id="appName">App 安裝</h1>
+        <p id="appDesc" class="muted"></p>
+        <p id="appVersion" class="chip" hidden></p>
+      </header>
+
+      <div id="notice" class="notice" role="status" hidden></div>
+
+      <section class="cards" aria-label="安裝選項">
+        <article id="cardAndroid" class="card">
+          <div class="card-head">
+            <span class="badge" aria-hidden="true">A</span>
+            <div>
+              <h2>Android</h2>
+              <p id="androidMeta" class="muted small">載入中…</p>
+            </div>
+          </div>
+          <a id="btnAndroid" class="btn" href="#" aria-disabled="true">下載 APK</a>
+          <p class="small muted">
+            下載後點開檔案安裝。第一次安裝需允許瀏覽器「安裝未知應用程式」。
+          </p>
+        </article>
+
+        <article id="cardIos" class="card">
+          <div class="card-head">
+            <span class="badge" aria-hidden="true">iOS</span>
+            <div>
+              <h2>iPhone / iPad</h2>
+              <p id="iosMeta" class="muted small">載入中…</p>
+            </div>
+          </div>
+          <a id="btnIos" class="btn" href="#" aria-disabled="true">安裝 iOS App</a>
+          <p class="small muted">
+            請用 <strong>Safari</strong> 開啟本頁。安裝後到「設定 → 一般 → VPN 與裝置管理」信任開發者，才能開啟
+            App。
+          </p>
+        </article>
+      </section>
+
+      <section class="scan" aria-labelledby="scanTitle">
+        <h2 id="scanTitle">掃描 QR code</h2>
+        <p class="muted small">用相機掃描別的 QR code（例如另一個安裝頁），掃到後可選擇是否開啟。</p>
+
+        <div id="scanView" class="scan-view" hidden>
+          <video id="scanVideo" playsinline muted></video>
+          <div class="scan-frame" aria-hidden="true"></div>
+        </div>
+        <canvas id="scanCanvas" hidden></canvas>
+
+        <p id="scanStatus" class="small muted" role="status" aria-live="polite"></p>
+
+        <div class="scan-actions">
+          <button id="btnScan" class="btn" type="button">開啟相機掃描</button>
+          <button id="btnScanStop" class="btn btn-secondary" type="button" hidden>停止掃描</button>
+          <input id="scanImage" class="visually-hidden" type="file" accept="image/*" />
+          <label id="btnScanImage" class="btn btn-secondary" for="scanImage">從相簿選擇圖片</label>
+        </div>
+
+        <div id="scanResult" class="scan-result" hidden>
+          <p class="small muted">掃描結果</p>
+          <p id="scanText" class="scan-text"></p>
+          <p id="scanWarn" class="small scan-warn" hidden></p>
+          <div class="scan-actions">
+            <a id="scanOpen" class="btn" href="#" target="_blank" rel="noopener noreferrer" hidden>開啟連結</a>
+            <button id="scanCopy" class="btn btn-secondary" type="button">複製內容</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="qr" aria-labelledby="qrTitle">
+        <h2 id="qrTitle">分享本頁 QR code</h2>
+        <p class="muted small">用手機相機掃描，開啟本頁後依裝置選擇安裝。</p>
+        <div id="qrBox" class="qr-box" role="img" aria-label="本頁網址的 QR code"></div>
+        <p id="qrUrl" class="url small"></p>
+        <button id="btnCopy" class="btn btn-secondary" type="button">複製網址</button>
+      </section>
+
+      <footer class="muted small">
+        <p>
+          內部測試版本，僅供授權人員安裝。<span id="updated"></span>
+        </p>
+      </footer>
+    </main>
+
+    <script src="/vendor/qrcode.js"></script>
+    <script src="/vendor/jsQR.js"></script>
+    <script src="/app.js"></script>
+    <script src="/scan.js"></script>
+  </body>
+</html>
