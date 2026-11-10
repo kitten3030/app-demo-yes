@@ -104,5 +104,8 @@ Write-Host 'adb reverse：tcp:44345、tcp:3000 已設定'
 if ($LASTEXITCODE -ne 0) { throw 'adb install 失敗' }
 
 & $adb -s $serial shell am force-stop $PackageId | Out-Null
-& $adb -s $serial shell monkey -p $PackageId -c android.intent.category.LAUNCHER 1 | Out-Null
+# monkey 會把參數印到 stderr；交給 cmd 以 >nul 2>&1 整個丟掉
+# （PowerShell 5.1 直接用 2>&1 重導原生程式的 stderr，會被當成錯誤而中斷腳本）
+cmd /c "`"$adb`" -s $serial shell monkey -p $PackageId -c android.intent.category.LAUNCHER 1 >nul 2>&1"
+if ($LASTEXITCODE -ne 0) { Write-Warning '啟動 App 失敗，請手動開啟' }
 Write-Host "已重新啟動 App：$PackageId"
