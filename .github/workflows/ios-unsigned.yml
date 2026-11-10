@@ -1,0 +1,42 @@
+# GitHub Actions：打包「未簽署」的 iOS IPA，供 Sideloadly / AltStore 以個人 Apple ID 側載。
+# 不需要任何 Apple 帳號、憑證或 Secrets。
+#
+# 產出的 IPA 不能直接安裝，必須由 Sideloadly 重新簽署（免費 Apple ID 效期 7 天）。
+name: iOS unsigned IPA
+
+on:
+  workflow_dispatch:   # Actions → iOS unsigned IPA → Run workflow
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: 打包（不簽署）
+        run: flutter build ios --release --no-codesign
+
+      - name: 封裝成 IPA
+        run: |
+          set -euo pipefail
+          APP="build/ios/iphoneos/Runner.app"
+          test -d "$APP"
+          rm -rf build/ipa-staging
+          mkdir -p build/ipa-staging/Payload
+          cp -R "$APP" build/ipa-staging/Payload/
+          (cd build/ipa-staging && zip -qry ../app-unsigned.ipa Payload)
+          ls -lh build/app-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-unsigned-ipa
+          path: build/app-unsigned.ipa
+          if-no-files-found: error
