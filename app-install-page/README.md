@@ -42,9 +42,36 @@ release 版目前以 debug 金鑰簽署，僅供內部測試。
 
 ### iOS（未簽署 IPA + Sideloadly 側載，目前頁面採用）
 
-1. 把 `app-demo` 推到 GitHub，執行 workflow **iOS unsigned IPA**（`.github/workflows/ios-unsigned.yml`），下載 artifact `app-unsigned-ipa`。
-2. 解壓縮後把 `app-unsigned.ipa` 放進 `files/`（檔名與 `config.json` 的 `ios.file` 一致）。
-3. 測試者在安裝頁下載 IPA，用 Sideloadly + 自己的 Apple ID 簽署並安裝（頁面有操作步驟）。免費 Apple ID 效期 7 天。
+#### 一、用 GitHub Actions 產生未簽署 IPA
+
+workflow 檔案是 `app-demo/.github/workflows/ios-unsigned.yml`，在 GitHub 的 macOS runner 執行 `flutter build ios --release --no-codesign`，再封裝成 `app-unsigned.ipa`。不需要 Apple 帳號、憑證或 Secrets。
+
+前提：`app-demo` 已推到 GitHub（目前為 `https://github.com/kitten3030/app-demo-yes`）。
+
+1. 打開儲存庫的 **Actions** 分頁：`https://github.com/kitten3030/app-demo-yes/actions`。
+2. 左邊 Workflows 清單點 **iOS unsigned IPA**。
+3. 右邊藍色橫幅（This workflow has a `workflow_dispatch` event trigger）旁按 **Run workflow**，分支選 `master`，再按綠色的 **Run workflow**。
+4. 重新整理頁面，會出現一筆執行紀錄（黃色轉圈），點進去可看進度，約 10～20 分鐘。
+5. 變成綠色勾勾後，捲到該次執行頁面最下方的 **Artifacts**，下載 `app-unsigned-ipa`（zip）。
+6. 解壓縮得到 `app-unsigned.ipa`，放進 `app-install-page/files/`（檔名需與 `config.json` 的 `ios.file` 一致）。`files/` 已加入 `.gitignore`，不會進版控。
+
+也可以用 GitHub CLI 執行與下載：
+
+```bash
+gh workflow run "iOS unsigned IPA" -R kitten3030/app-demo-yes --ref master
+gh run list -R kitten3030/app-demo-yes --workflow "iOS unsigned IPA" --limit 1
+gh run download <run-id> -R kitten3030/app-demo-yes -n app-unsigned-ipa -D files
+```
+
+執行失敗（紅色叉叉）時，點進該次執行，展開紅叉的步驟看最後幾行錯誤。最常出問題的是「打包（不簽署）」這一步，通常是 Flutter 版本（`pubspec.yaml` 要求 Dart `^3.13.5`）或 CocoaPods 相依問題。
+
+注意：私有庫的 macOS 分鐘數以 10 倍計算；公開庫不限。
+
+#### 二、測試者側載
+
+1. 測試者在安裝頁下載 IPA 到電腦。
+2. 用 Sideloadly + 自己的 Apple ID 簽署並安裝到 iPhone（安裝頁有完整步驟）。
+3. 免費 Apple ID 簽署效期 7 天，到期需重新側載；同一個 Apple ID 最多同時 3 個側載 App。
 
 下面的 Codemagic / GitHub Actions ad-hoc 與 `itms-services` 章節，僅在取得付費 Apple Developer 帳號後使用；`server.js` 仍保留 `/manifest.plist`，頁面目前不使用。
 
