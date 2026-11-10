@@ -9,7 +9,7 @@
     "packageId": "tw.com.pst.yes_app_demo"
   },
   "ios": {
-    "file": "files/app-release.ipa",
+    "file": "files/app-unsigned.ipa",
     "bundleId": "tw.com.pst.yesAppDemo"
   }
 }

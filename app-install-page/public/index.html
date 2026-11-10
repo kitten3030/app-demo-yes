@@ -40,11 +40,21 @@
               <p id="iosMeta" class="muted small">載入中…</p>
             </div>
           </div>
-          <a id="btnIos" class="btn" href="#" aria-disabled="true">安裝 iOS App</a>
+          <a id="btnIos" class="btn" href="#" aria-disabled="true">下載 iOS IPA（未簽署）</a>
           <p class="small muted">
-            請用 <strong>Safari</strong> 開啟本頁。安裝後到「設定 → 一般 → VPN 與裝置管理」信任開發者，才能開啟
-            App。
+            此 IPA 未簽署，<strong>不能直接點開安裝</strong>。請下載到電腦，用 Sideloadly 以 Apple ID
+            簽署並安裝到 iPhone。
           </p>
+          <details class="steps">
+            <summary>Sideloadly 側載步驟</summary>
+            <ol class="small">
+              <li>在 Windows 安裝 Apple 官網版 <strong>iTunes</strong> 與 <strong>iCloud</strong>（不要用 Microsoft Store 版），再安裝 <a href="https://sideloadly.io" target="_blank" rel="noopener noreferrer">Sideloadly</a>。</li>
+              <li>用傳輸線連接 iPhone 與電腦，手機點「信任此電腦」。iOS 16 以上要先到「設定 → 隱私權與安全性 → 開發者模式」開啟並重新開機。</li>
+              <li>在電腦上下載本頁的 IPA，拖進 Sideloadly，輸入 Apple ID（建議用專門申請的帳號），按 Start。</li>
+              <li>安裝完成後到「設定 → 一般 → VPN 與裝置管理」信任該 Apple ID，再開啟 App。</li>
+            </ol>
+            <p class="small muted">免費 Apple ID 簽署的 App 效期 7 天，到期需重新側載；同一個 Apple ID 最多同時 3 個側載 App。</p>
+          </details>
         </article>
       </section>
 

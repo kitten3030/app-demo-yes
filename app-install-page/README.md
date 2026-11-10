@@ -1,6 +1,6 @@
 # App 安裝頁
 
-簡易的內部測試版安裝頁：Android 直接下載 APK，iOS 用 `itms-services` 安裝 IPA。頁面上有「分享本頁 QR code」讓別台手機掃描開啟，也能用相機「掃描別的 QR code」。
+簡易的內部測試版安裝頁：Android 直接下載 APK，iOS 提供未簽署 IPA 下載，由測試者用 Sideloadly 側載（頁面不再顯示 `itms-services` 安裝按鈕）。頁面上有「分享本頁 QR code」讓別台手機掃描開啟，也能用相機「掃描別的 QR code」。
 
 只需要 Node.js 18+，沒有任何 npm 套件要安裝。
 
@@ -18,7 +18,7 @@
 
 ## 使用
 
-1. 把安裝檔放進 `files/`，檔名要和 `config.json` 的 `android.file`、`ios.file` 一致（預設 `app-release.apk`、`app-release.ipa`）。沒放的平台，按鈕會停用並顯示「尚未上傳安裝檔」。
+1. 把安裝檔放進 `files/`，檔名要和 `config.json` 的 `android.file`、`ios.file` 一致（預設 `app-release.apk`、`app-unsigned.ipa`）。沒放的平台，按鈕會停用並顯示「尚未上傳安裝檔」。
 2. 發行新版時更新 `config.json` 的 `version`、`build`（iOS 的 manifest 會用到）。
 3. 啟動：
 
@@ -39,6 +39,14 @@ copy C:\dev\app-demo-yun-lin-yes\build\app\outputs\flutter-apk\app-release.apk f
 ```
 
 release 版目前以 debug 金鑰簽署，僅供內部測試。
+
+### iOS（未簽署 IPA + Sideloadly 側載，目前頁面採用）
+
+1. 把 `app-demo` 推到 GitHub，執行 workflow **iOS unsigned IPA**（`.github/workflows/ios-unsigned.yml`），下載 artifact `app-unsigned-ipa`。
+2. 解壓縮後把 `app-unsigned.ipa` 放進 `files/`（檔名與 `config.json` 的 `ios.file` 一致）。
+3. 測試者在安裝頁下載 IPA，用 Sideloadly + 自己的 Apple ID 簽署並安裝（頁面有操作步驟）。免費 Apple ID 效期 7 天。
+
+下面的 Codemagic / GitHub Actions ad-hoc 與 `itms-services` 章節，僅在取得付費 Apple Developer 帳號後使用；`server.js` 仍保留 `/manifest.plist`，頁面目前不使用。
 
 ### iOS（Codemagic 雲端打包，不需要 Mac）
 

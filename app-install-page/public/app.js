@@ -109,18 +109,13 @@
       $("btnAndroid").setAttribute("download", info.android.name);
     }
 
-    // iOS：itms-services 要求 manifest 為 https 網址；用瀏覽器實際連線的網址組出來
+    // iOS：未簽署 IPA，直接下載後用 Sideloadly 側載（不使用 itms-services）
     $("iosMeta").textContent = describe(info.ios, info.version);
     if (info.ios.exists) {
-      if (location.protocol === "https:") {
-        const manifestUrl = `${location.origin}/manifest.plist`;
-        enable(
-          $("btnIos"),
-          `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`
-        );
-      } else {
-        $("iosMeta").textContent = "需使用 https 網址才能安裝";
-        if (isIos) notices.push("iOS 安裝必須透過 https，請改用公開（https）網址開啟本頁。");
+      enable($("btnIos"), `/files/${encodeURIComponent(info.ios.name)}`);
+      $("btnIos").setAttribute("download", info.ios.name);
+      if (isIos) {
+        notices.push("iPhone 無法直接安裝此檔案，請在電腦下載 IPA 後用 Sideloadly 側載。");
       }
     }
 
