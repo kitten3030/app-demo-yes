@@ -40,7 +40,23 @@ copy C:\dev\app-demo-yun-lin-yes\build\app\outputs\flutter-apk\app-release.apk f
 
 release 版目前以 debug 金鑰簽署，僅供內部測試。
 
-### iOS
+### iOS（Codemagic 雲端打包，不需要 Mac）
+
+`app-demo/codemagic.yaml` 已設定好 `ios-adhoc` workflow。一次性設定：
+
+1. **Apple Developer 帳號**（付費，個人或公司）。到 [developer.apple.com](https://developer.apple.com/account) → Certificates, IDs & Profiles：
+   - **Identifiers**：新增 App ID，Bundle ID 填 `tw.com.pst.yesAppDemo`（Explicit）。
+   - **Devices**：註冊要測試的 iPhone UDID（最多 100 台）。UDID 可在 Mac Finder、或 iPhone 開 [get.udid.io](https://get.udid.io) 取得。
+2. **App Store Connect API key**：[App Store Connect](https://appstoreconnect.apple.com/access/integrations/api) → 使用者與存取 → 整合 → App Store Connect API → 產生金鑰（權限選 **Admin** 或 **App Manager**），下載 `.p8`（只能下載一次），記下 Issuer ID 與 Key ID。
+3. **Codemagic**：註冊並連到儲存庫（見下方注意事項）→ Teams → Integrations → Developer Portal → Connect，名稱填 `codemagic`，貼上 Issuer ID、Key ID 並上傳 `.p8`。
+4. 在 Codemagic 的 app 頁選 `ios-adhoc` workflow → **Start new build**。Codemagic 會自動建立 ad-hoc 憑證與描述檔，不需自己準備 `.p12`。
+5. 建置完成後下載 `.ipa`，複製成 `files/app-release.ipa`。
+
+新增測試機後，要在 Apple Developer 註冊 UDID，再重跑一次 build（描述檔會自動更新）。
+
+注意：儲存庫 remote 是內網 GitLab（`192.168.5.9`），Codemagic 雲端連不到。可選：把程式碼另推一份到 GitHub / GitLab.com / Bitbucket 私有庫給 Codemagic 使用，或在 Codemagic 用 ZIP/「Other」方式上傳原始碼。
+
+### iOS（有 Mac 時）
 
 在 Mac 上打包，匯出方式要選 **ad-hoc** 或 **enterprise**（App Store / development 匯出的 IPA 無法用 OTA 安裝）：
 
