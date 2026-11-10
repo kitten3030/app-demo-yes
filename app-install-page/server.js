@@ -6,7 +6,7 @@
 //   /                  安裝頁（public/index.html）
 //   /api/info          App 資訊與 apk / ipa 是否存在（給安裝頁使用）
 //   /manifest.plist    iOS OTA 安裝用的 manifest，依「目前連線的網址」動態產生
-//   /files/<檔名>      apk / ipa 下載（只開放 config.json 設定的兩個檔案）
+//   /files/<檔名>      apk / ipa 下載（只開放 config.json 設定的檔案）
 //
 // 為什麼 manifest.plist 要動態產生：itms-services 要求 manifest 內的 ipa 網址是
 // 絕對的 https 網址，而 VS Code 連接埠轉送的網址每次都不同，靜態檔寫不死。
@@ -42,6 +42,7 @@ function registerDownload(relPath, contentType) {
 }
 registerDownload(config.android?.file, "application/vnd.android.package-archive");
 registerDownload(config.ios?.file, "application/octet-stream");
+registerDownload(config.ios?.sideloadFile, "application/octet-stream"); // 未簽署 IPA，供 Sideloadly 側載備用
 
 /**
  * 取得對外網址（含 https），例如 https://xxxx-8080.asse.devtunnels.ms
@@ -177,7 +178,11 @@ const server = http.createServer((req, res) => {
       build: config.build,
       baseUrl: getBaseUrl(req),
       android: { ...fileStat(config.android?.file), packageId: config.android?.packageId },
-      ios: { ...fileStat(config.ios?.file), bundleId: config.ios?.bundleId },
+      ios: {
+        ...fileStat(config.ios?.file),
+        bundleId: config.ios?.bundleId,
+        sideload: fileStat(config.ios?.sideloadFile),
+      },
     });
   }
 
@@ -213,7 +218,8 @@ server.listen(PORT, () => {
   console.log(`安裝頁已啟動：http://localhost:${PORT}`);
   for (const [label, p] of [
     ["Android", config.android?.file],
-    ["iOS", config.ios?.file],
+    ["iOS（itms-services）", config.ios?.file],
+    ["iOS（Sideloadly 備用）", config.ios?.sideloadFile],
   ]) {
     console.log(`  ${label}：${fileStat(p).exists ? "已找到 " + p : "尚未放置 " + p}`);
   }

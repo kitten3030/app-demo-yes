@@ -1,6 +1,6 @@
 # App 安裝頁
 
-簡易的內部測試版安裝頁：Android 直接下載 APK，iOS 提供未簽署 IPA 下載，由測試者用 Sideloadly 側載（頁面不再顯示 `itms-services` 安裝按鈕）。頁面上有「分享本頁 QR code」讓別台手機掃描開啟，也能用相機「掃描別的 QR code」。
+簡易的內部測試版安裝頁：Android 直接下載 APK；iOS 主流程是以 `itms-services` 安裝 ad-hoc 簽署的 `app-release.ipa`（需付費 Apple Developer 帳號），備用方案是下載未簽署的 `app-unsigned.ipa` 用 Sideloadly 側載。頁面上有「分享本頁 QR code」讓別台手機掃描開啟，也能用相機「掃描別的 QR code」。
 
 只需要 Node.js 18+，沒有任何 npm 套件要安裝。
 
@@ -14,11 +14,11 @@
 | `config.json`          | App 名稱、版本、套件識別碼、apk/ipa 檔名、連接埠             |
 | `public/`              | 安裝頁（`index.html`、`style.css`、`app.js` 安裝與分享 QR、`scan.js` 掃描 QR） |
 | `public/vendor/`       | 內建不依賴 CDN：QR code 產生器 [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)（MIT）、QR code 解碼器 [jsQR](https://github.com/cozmo/jsQR)（Apache-2.0） |
-| `files/`               | 放 `app-release.apk`、`app-release.ipa`（已加入 `.gitignore`） |
+| `files/`               | 放 `app-release.apk`、`app-release.ipa`（ad-hoc，itms-services 用）、`app-unsigned.ipa`（未簽署，Sideloadly 備用）（已加入 `.gitignore`） |
 
 ## 使用
 
-1. 把安裝檔放進 `files/`，檔名要和 `config.json` 的 `android.file`、`ios.file` 一致（預設 `app-release.apk`、`app-unsigned.ipa`）。沒放的平台，按鈕會停用並顯示「尚未上傳安裝檔」。
+1. 把安裝檔放進 `files/`，檔名要和 `config.json` 的 `android.file`、`ios.file`、`ios.sideloadFile` 一致（預設 `app-release.apk`、`app-release.ipa`、`app-unsigned.ipa`）。沒放的檔案，對應按鈕會停用並顯示「尚未上傳安裝檔」。
 2. 發行新版時更新 `config.json` 的 `version`、`build`（iOS 的 manifest 會用到）。
 3. 啟動：
 
@@ -40,7 +40,18 @@ copy C:\dev\app-demo-yun-lin-yes\build\app\outputs\flutter-apk\app-release.apk f
 
 release 版目前以 debug 金鑰簽署，僅供內部測試。
 
-### iOS（未簽署 IPA + Sideloadly 側載，目前頁面採用）
+### iOS 總覽
+
+| 方案 | 檔案 | 安裝頁按鈕 | 需要 |
+| ---- | ---- | ---------- | ---- |
+| **主流程**：ad-hoc + `itms-services` | `files/app-release.ipa` | 「安裝 iOS App」 | 付費 Apple Developer 帳號、測試機 UDID 已加入描述檔、https 網址、Safari |
+| **備用**：未簽署 IPA + Sideloadly | `files/app-unsigned.ipa` | 「備用：Sideloadly 側載」內的「下載未簽署 IPA」 | 電腦（Windows + Sideloadly）、個人 Apple ID，不需付費帳號 |
+
+兩個檔案可以同時存在：UDID 已登記的手機走主流程；沒登記或安裝失敗的改走備用。沒放 `app-release.ipa` 時，主按鈕會停用，頁面提示改用備用方案。
+
+主流程的打包有三種做法，請擇一（見下方各「iOS 主流程」章節）：GitHub Actions（目前使用）、Codemagic、有 Mac 時自行打包。
+
+### iOS 備用：未簽署 IPA + Sideloadly 側載
 
 #### 一、用 GitHub Actions 產生未簽署 IPA
 
@@ -53,7 +64,7 @@ workflow 檔案是 `app-demo/.github/workflows/ios-unsigned.yml`，在 GitHub �
 3. 右邊藍色橫幅（This workflow has a `workflow_dispatch` event trigger）旁按 **Run workflow**，分支選 `master`，再按綠色的 **Run workflow**。
 4. 重新整理頁面，會出現一筆執行紀錄（黃色轉圈），點進去可看進度，約 10～20 分鐘。
 5. 變成綠色勾勾後，捲到該次執行頁面最下方的 **Artifacts**，下載 `app-unsigned-ipa`（zip）。
-6. 解壓縮得到 `app-unsigned.ipa`，放進 `app-install-page/files/`（檔名需與 `config.json` 的 `ios.file` 一致）。`files/` 已加入 `.gitignore`，不會進版控。
+6. 解壓縮得到 `app-unsigned.ipa`，放進 `app-install-page/files/`（檔名需與 `config.json` 的 `ios.sideloadFile` 一致）。`files/` 已加入 `.gitignore`，不會進版控。
 
 也可以用 GitHub CLI 執行與下載：
 
@@ -73,9 +84,9 @@ gh run download <run-id> -R kitten3030/app-demo-yes -n app-unsigned-ipa -D files
 2. 用 Sideloadly + 自己的 Apple ID 簽署並安裝到 iPhone（安裝頁有完整步驟）。
 3. 免費 Apple ID 簽署效期 7 天，到期需重新側載；同一個 Apple ID 最多同時 3 個側載 App。
 
-下面的 Codemagic / GitHub Actions ad-hoc 與 `itms-services` 章節，僅在取得付費 Apple Developer 帳號後使用；`server.js` 仍保留 `/manifest.plist`，頁面目前不使用。
+### iOS 主流程：Codemagic 雲端打包（不需要 Mac）
 
-### iOS（Codemagic 雲端打包，不需要 Mac）
+以下三種打包方式產出的都是 ad-hoc `.ipa`，需要付費 Apple Developer 帳號；完成後放進 `files/app-release.ipa`，安裝頁的「安裝 iOS App」按鈕就會啟用。
 
 `app-demo/codemagic.yaml` 已設定好 `ios-adhoc` workflow。一次性設定：
 
@@ -91,7 +102,7 @@ gh run download <run-id> -R kitten3030/app-demo-yes -n app-unsigned-ipa -D files
 
 注意：儲存庫 remote 是內網 GitLab（`192.168.5.9`），Codemagic 雲端連不到。可選：把程式碼另推一份到 GitHub / GitLab.com / Bitbucket 私有庫給 Codemagic 使用，或在 Codemagic 用 ZIP/「Other」方式上傳原始碼。
 
-### iOS（GitHub Actions 雲端打包，不需要 Mac）
+### iOS 主流程：GitHub Actions 雲端打包（不需要 Mac）
 
 `app-demo/.github/workflows/ios-adhoc.yml` 在 GitHub 的 macOS runner 上打包。需先把 `app-demo` 推到 GitHub 私有庫（內網 GitLab 連不到雲端）。與 Codemagic 不同，這裡不會自動簽署，要自己準備憑證與描述檔：
 
@@ -130,7 +141,7 @@ gh run download <run-id> -R kitten3030/app-demo-yes -n app-unsigned-ipa -D files
 
 `dist.key`、`dist.p12`、描述檔請妥善保管，不要提交到儲存庫。新增測試機時要在 Apple Developer 重新產生並下載描述檔，更新 `IOS_PROFILE_BASE64`。
 
-### iOS（有 Mac 時）
+### iOS 主流程：有 Mac 時自行打包
 
 在 Mac 上打包，匯出方式要選 **ad-hoc** 或 **enterprise**（App Store / development 匯出的 IPA 無法用 OTA 安裝）：
 
@@ -146,13 +157,13 @@ flutter build ipa --export-method ad-hoc
 
 ## iOS 安裝原理與限制
 
-按鈕連結是：
+主流程「安裝 iOS App」按鈕的連結是：
 
 ```text
 itms-services://?action=download-manifest&url=https://<公開網址>/manifest.plist
 ```
 
-- iOS 要求 **manifest 與 IPA 都必須是有效憑證的 https 網址**。用 `http://localhost` 開啟時，iOS 按鈕會停用。
+- iOS 要求 **manifest 與 IPA 都必須是有效憑證的 https 網址**。用非 https 網址（例如 `http://localhost`）開啟時，「安裝 iOS App」按鈕會停用並顯示提示；備用的 Sideloadly 下載不受影響。
 - `manifest.plist` 由 `server.js` 依目前連線的網址動態產生（讀 `X-Forwarded-Host`、`X-Forwarded-Proto`、`Host`），所以轉送網址每次不同也不用手動改。若走的是沒有帶這些標頭的反向代理，可指定固定網址：
 
   ```bash
@@ -177,7 +188,8 @@ itms-services://?action=download-manifest&url=https://<公開網址>/manifest.pl
 
 | 現象 | 可能原因 |
 | ---- | -------- |
-| iOS 按鈕是灰的 | `files/` 沒有 IPA，或不是用 https 開啟頁面 |
+| 「安裝 iOS App」按鈕是灰的 | `files/` 沒有 `app-release.ipa`，或不是用 https 開啟頁面 |
+| 「下載未簽署 IPA」按鈕是灰的 | `files/` 沒有 `app-unsigned.ipa` |
 | 點 iOS 安裝後出現「無法連接」 | 連接埠不是「公開」；或 `bundleId` 與 IPA 不符；或憑證無效 |
 | iOS 安裝完成卻打不開 | 尚未在「VPN 與裝置管理」信任開發者；ad-hoc 的 UDID 未加入描述檔 |
 | Android 下載後無法安裝 | 未允許該瀏覽器「安裝未知應用程式」；或手機上已有不同簽章的同套件 App，需先解除安裝 |
@@ -188,4 +200,4 @@ itms-services://?action=download-manifest&url=https://<公開網址>/manifest.pl
 ## 注意
 
 - 這是內部測試用，公開連接埠等於任何知道網址的人都能下載安裝檔，測試完請關閉連接埠或把可見度改回私人。
-- `files/` 內的安裝檔不進版控；`/files/` 只提供 `config.json` 指定的兩個檔名，其他路徑一律 404。
+- `files/` 內的安裝檔不進版控；`/files/` 只提供 `config.json` 指定的檔名（`android.file`、`ios.file`、`ios.sideloadFile`），其他路徑一律 404。

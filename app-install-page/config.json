@@ -9,7 +9,8 @@
     "packageId": "tw.com.pst.yes_app_demo"
   },
   "ios": {
-    "file": "files/app-unsigned.ipa",
+    "file": "files/app-release.ipa",
+    "sideloadFile": "files/app-unsigned.ipa",
     "bundleId": "tw.com.pst.yesAppDemo"
   }
 }

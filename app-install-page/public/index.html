@@ -40,13 +40,19 @@
               <p id="iosMeta" class="muted small">載入中…</p>
             </div>
           </div>
-          <a id="btnIos" class="btn" href="#" aria-disabled="true">下載 iOS IPA（未簽署）</a>
+          <a id="btnIos" class="btn" href="#" aria-disabled="true">安裝 iOS App</a>
           <p class="small muted">
-            此 IPA 未簽署，<strong>不能直接點開安裝</strong>。請下載到電腦，用 Sideloadly 以 Apple ID
-            簽署並安裝到 iPhone。
+            請用 <strong>Safari</strong> 開啟本頁並點按鈕安裝。手機的 UDID 必須已加入描述檔；第一次安裝後，
+            到「設定 → 一般 → VPN 與裝置管理」信任開發者才能開啟。
           </p>
           <details class="steps">
-            <summary>Sideloadly 側載步驟</summary>
+            <summary>備用：Sideloadly 側載（未簽署 IPA）</summary>
+            <p class="small muted">
+              手機 UDID 未加入描述檔、或上方安裝失敗時使用。此 IPA 未簽署，<strong>不能直接點開安裝</strong>，
+              請下載到電腦，用 Sideloadly 以 Apple ID 簽署並安裝到 iPhone。
+            </p>
+            <p id="iosSideloadMeta" class="muted small"></p>
+            <a id="btnIosSideload" class="btn btn-secondary" href="#" aria-disabled="true">下載未簽署 IPA</a>
             <ol class="small">
               <li>在 Windows 安裝 Apple 官網版 <strong>iTunes</strong> 與 <strong>iCloud</strong>（不要用 Microsoft Store 版），再安裝 <a href="https://sideloadly.io" target="_blank" rel="noopener noreferrer">Sideloadly</a>。</li>
               <li>用傳輸線連接 iPhone 與電腦，手機點「信任此電腦」。iOS 16 以上要先到「設定 → 隱私權與安全性 → 開發者模式」開啟並重新開機。</li>

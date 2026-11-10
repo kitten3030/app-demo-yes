@@ -109,14 +109,25 @@
       $("btnAndroid").setAttribute("download", info.android.name);
     }
 
-    // iOS：未簽署 IPA，直接下載後用 Sideloadly 側載（不使用 itms-services）
+    // iOS：ad-hoc IPA 以 itms-services 透過 manifest.plist 直接安裝（不可加 download 屬性）
     $("iosMeta").textContent = describe(info.ios, info.version);
     if (info.ios.exists) {
-      enable($("btnIos"), `/files/${encodeURIComponent(info.ios.name)}`);
-      $("btnIos").setAttribute("download", info.ios.name);
-      if (isIos) {
-        notices.push("iPhone 無法直接安裝此檔案，請在電腦下載 IPA 後用 Sideloadly 側載。");
+      if (location.protocol === "https:") {
+        const manifestUrl = `${location.origin}/manifest.plist`;
+        enable($("btnIos"), `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`);
+      } else {
+        notices.push("iOS 安裝必須用 https 網址開啟，請改用公開的 https 網址。");
       }
+    } else if (isIos) {
+      notices.push("尚未上傳已簽署的 iOS 安裝檔，可先使用下方「備用：Sideloadly 側載」。");
+    }
+
+    // iOS 備用：未簽署 IPA，下載到電腦後用 Sideloadly 側載
+    const sideload = info.ios.sideload || { exists: false };
+    $("iosSideloadMeta").textContent = describe(sideload, info.version);
+    if (sideload.exists) {
+      enable($("btnIosSideload"), `/files/${encodeURIComponent(sideload.name)}`);
+      $("btnIosSideload").setAttribute("download", sideload.name);
     }
 
     showNotice(notices);
