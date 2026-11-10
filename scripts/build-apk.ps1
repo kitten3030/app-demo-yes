@@ -18,7 +18,9 @@
 param(
   [ValidateSet('release', 'debug')]
   [string]$Mode = 'release',
-  [string]$Dest = 'C:\dev\app-demo-yun-lin-yes'
+  [string]$Dest = 'C:\dev\app-demo-yun-lin-yes',
+  # 只打包，不安裝到模擬器
+  [switch]$NoInstall
 )
 
 $ErrorActionPreference = 'Stop'
@@ -64,3 +66,43 @@ Write-Host ''
 Write-Host "APK 位置：$($item.FullName)"
 Write-Host "APK 大小：$($item.Length) 位元組（約 $sizeMb MB）"
 Write-Host "產生時間：$($item.LastWriteTime)"
+
+# 4. 安裝到模擬器並重新啟動 App
+if ($NoInstall) { return }
+
+$PackageId = 'tw.com.pst.yes_app_demo'
+$adbCmd = Get-Command adb -ErrorAction SilentlyContinue
+if ($adbCmd) { $adb = $adbCmd.Source }
+else {
+  $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
+  $adb = Join-Path $sdk 'platform-tools\adb.exe'
+}
+if (-not (Test-Path $adb)) {
+  Write-Warning "找不到 adb，略過安裝（可設定 ANDROID_HOME 或把 adb 加入 PATH）"
+  return
+}
+
+# 取得第一個狀態為 device 的裝置；沒有就只提醒，不算失敗
+$deviceLine = & $adb devices | Select-String '\tdevice$' | Select-Object -First 1
+if (-not $deviceLine) {
+  Write-Warning '沒有已連線的模擬器／裝置，略過安裝。請先啟動模擬器後再執行。'
+  return
+}
+$serial = ($deviceLine.Line -split '\t')[0]
+Write-Host ''
+Write-Host "安裝到：$serial"
+
+# 本機環境靠 adb reverse 連到電腦的後端(44345)與網頁(3000)；模擬器重啟後會清空，每次重新設定
+foreach ($port in 44345, 3000) {
+  & $adb -s $serial reverse "tcp:$port" "tcp:$port" | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "adb reverse tcp:$port 失敗" }
+}
+Write-Host 'adb reverse：tcp:44345、tcp:3000 已設定'
+
+# -r 原地更新，保留 App 資料
+& $adb -s $serial install -r $apk
+if ($LASTEXITCODE -ne 0) { throw 'adb install 失敗' }
+
+& $adb -s $serial shell am force-stop $PackageId | Out-Null
+& $adb -s $serial shell monkey -p $PackageId -c android.intent.category.LAUNCHER 1 | Out-Null
+Write-Host "已重新啟動 App：$PackageId"
