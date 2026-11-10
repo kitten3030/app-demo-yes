@@ -82,15 +82,25 @@ if (-not (Test-Path $adb)) {
   return
 }
 
-# 取得第一個狀態為 device 的裝置；沒有就只提醒，不算失敗
-$deviceLine = & $adb devices | Select-String '\tdevice$' | Select-Object -First 1
-if (-not $deviceLine) {
-  Write-Warning '沒有已連線的模擬器／裝置，略過安裝。請先啟動模擬器後再執行。'
+# 只安裝到模擬器（序號以 emulator- 開頭），避免同時接著實體手機時誤裝；
+# 沒有已啟動的模擬器就只提醒並略過，不算失敗
+$devices = @(& $adb devices | Select-String '\tdevice$' | ForEach-Object { ($_.Line -split '\t')[0] })
+$serial = $devices | Where-Object { $_ -like 'emulator-*' } | Select-Object -First 1
+if (-not $serial) {
+  if ($devices.Count -gt 0) {
+    Write-Warning "只偵測到實體裝置（$($devices -join ', ')），不會自動安裝。請先啟動模擬器後再執行。"
+  }
+  else {
+    Write-Warning '沒有已連線的模擬器，略過安裝。請先啟動模擬器後再執行。'
+  }
   return
 }
-$serial = ($deviceLine.Line -split '\t')[0]
 Write-Host ''
-Write-Host "安裝到：$serial"
+Write-Host "安裝到模擬器：$serial"
+$others = @($devices | Where-Object { $_ -ne $serial })
+if ($others.Count -gt 0) {
+  Write-Host "（已略過其他裝置：$($others -join ', ')）"
+}
 
 # 本機環境靠 adb reverse 連到電腦的後端(44345)與網頁(3000)；模擬器重啟後會清空，每次重新設定
 foreach ($port in 44345, 3000) {
