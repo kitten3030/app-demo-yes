@@ -107,8 +107,10 @@ gh run download <run-id> -R kitten3030/app-demo-yes -n app-unsigned-ipa -D files
 
    ```bash
    openssl x509 -inform DER -in distribution.cer -out distribution.pem
-   openssl pkcs12 -export -inkey dist.key -in distribution.pem -out dist.p12 -password pass:自訂密碼
+   openssl pkcs12 -export -legacy -inkey dist.key -in distribution.pem -out dist.p12 -password pass:自訂密碼
    ```
+
+   `-legacy` 是必要的：OpenSSL 3 預設的 PKCS#12 加密，macOS 的 `security import` 讀不了（會報 `MAC verification failed`）。若 openssl 不認得 `-legacy`，改用 `-keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1` 取代它。
 
 3. **建立描述檔**：Profiles → ＋ → **Ad Hoc**，選 App ID、剛建的憑證與所有測試機，下載 `.mobileprovision`。
 4. **轉 base64 並設成 GitHub Secrets**（Settings → Secrets and variables → Actions）：
