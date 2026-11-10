@@ -365,30 +365,99 @@ class _HomePageState extends State<HomePage> {
 
   /// 上方標題列：左側標題、右側設置按鈕（展開選單內提供登出）
   Widget _buildTitleBar() {
-    final theme = Theme.of(context);
     return Container(
-      height: 52,
-      padding: const EdgeInsets.only(left: 16, right: 4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(bottom: BorderSide(color: theme.dividerColor)),
+      height: 64,
+      padding: const EdgeInsets.only(left: 16, right: 10),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: NaturePalette.hairline)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 12,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              '我家環境通',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+          // 與登入頁相同的圓形 logo，外加白邊與柔和陰影
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              border: Border.all(color: NaturePalette.hairline),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1A2E7D5B),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/logo.jpg',
+                width: 38,
+                height: 38,
+                fit: BoxFit.cover,
               ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '我家環境通',
+                  style: TextStyle(
+                    fontSize: 20,
+                    height: 1.15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                    color: NaturePalette.label,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '雲林縣環境監測助手',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.1,
+                    letterSpacing: 0.6,
+                    color: NaturePalette.labelSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
           PopupMenuButton<String>(
             tooltip: '設置',
-            icon: const Icon(Icons.settings),
+            position: PopupMenuPosition.under,
+            offset: const Offset(0, 6),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
             onSelected: (value) {
               if (value == 'logout') _logout(message: '已登出');
             },
+            // 柔和底色的圓形設置按鈕
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: NaturePalette.fill,
+              ),
+              child: const Icon(
+                Icons.settings_outlined,
+                size: 22,
+                color: NaturePalette.label,
+              ),
+            ),
             itemBuilder: (_) => const [
               PopupMenuItem<String>(
                 value: 'logout',
