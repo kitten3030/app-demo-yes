@@ -4,8 +4,9 @@
 
 .DESCRIPTION
   原始碼所在路徑含中文時，Gradle / Kotlin 編譯會失敗，因此打包固定在英文路徑進行：
-    1. 以 robocopy 鏡像同步原始碼到 $Dest（排除 build、.dart_tool、.git、app-install-page；
-       目的地已存在的這些資料夾不會被刪除，可沿用編譯快取加快速度）
+    1. 以 robocopy 鏡像同步原始碼到 $Dest（排除 build、.dart_tool、.git、app-install-page，
+       以及專案根目錄的 release/；目的地已存在的這些資料夾不會被刪除，可沿用編譯快取加快速度。
+       release/ 是發行用的舊 APK，不參與打包，目的地若已有舊的 release/ 也不會被動到，可自行刪除）
     2. 在 $Dest 執行 flutter build apk
     3. 印出 APK 位置與大小
 
@@ -33,8 +34,12 @@ Write-Host "目的：$Dest"
 
 # 1. 同步（/MIR 鏡像；/XD 排除資料夾；其餘參數僅減少輸出）
 #    app-install-page 是安裝頁（Node 專案，files/ 內還有數十 MB 的安裝檔），與 Flutter 打包無關，不需要同步
+#    release/ 放的是發行用的舊 APK（已被 .gitignore 忽略），同樣不需要同步。
+#    只排除「專案根目錄」的 release，用完整路徑；若只寫名稱，連 android/app/src/release 這類
+#    release 專用的原始碼資料夾也會被排除，打包時會悄悄少東西。
 New-Item -ItemType Directory -Force -Path $Dest | Out-Null
-robocopy $Source $Dest /MIR /XD build .dart_tool .git app-install-page /NFL /NDL /NJH /NJS /NP | Out-Null
+$releaseDir = Join-Path $Source 'release'
+robocopy $Source $Dest /MIR /XD build .dart_tool .git app-install-page $releaseDir /NFL /NDL /NJH /NJS /NP | Out-Null
 # robocopy 結束碼 0~7 皆為成功，8 以上才是失敗
 if ($LASTEXITCODE -ge 8) {
   throw "robocopy 同步失敗（結束碼 $LASTEXITCODE）"
