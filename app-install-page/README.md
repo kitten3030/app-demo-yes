@@ -56,6 +56,43 @@ release 版目前以 debug 金鑰簽署，僅供內部測試。
 
 注意：儲存庫 remote 是內網 GitLab（`192.168.5.9`），Codemagic 雲端連不到。可選：把程式碼另推一份到 GitHub / GitLab.com / Bitbucket 私有庫給 Codemagic 使用，或在 Codemagic 用 ZIP/「Other」方式上傳原始碼。
 
+### iOS（GitHub Actions 雲端打包，不需要 Mac）
+
+`app-demo/.github/workflows/ios-adhoc.yml` 在 GitHub 的 macOS runner 上打包。需先把 `app-demo` 推到 GitHub 私有庫（內網 GitLab 連不到雲端）。與 Codemagic 不同，這裡不會自動簽署，要自己準備憑證與描述檔：
+
+1. Apple Developer：建立 App ID `tw.com.pst.yesAppDemo`、註冊測試機 UDID（同 Codemagic 章節）。
+2. **建立 Apple Distribution 憑證（Windows 用 Git Bash 的 openssl）**：
+
+   ```bash
+   openssl genrsa -out dist.key 2048
+   openssl req -new -key dist.key -out dist.csr -subj "/emailAddress=你的Apple信箱/CN=你的名字/C=TW"
+   ```
+
+   Certificates → ＋ → **Apple Distribution**，上傳 `dist.csr`，下載 `distribution.cer`，再轉成 `.p12`：
+
+   ```bash
+   openssl x509 -inform DER -in distribution.cer -out distribution.pem
+   openssl pkcs12 -export -inkey dist.key -in distribution.pem -out dist.p12 -password pass:自訂密碼
+   ```
+
+3. **建立描述檔**：Profiles → ＋ → **Ad Hoc**，選 App ID、剛建的憑證與所有測試機，下載 `.mobileprovision`。
+4. **轉 base64 並設成 GitHub Secrets**（Settings → Secrets and variables → Actions）：
+
+   ```bash
+   base64 -w0 dist.p12 > p12.b64
+   base64 -w0 profile.mobileprovision > profile.b64
+   ```
+
+   | Secret | 內容 |
+   | --- | --- |
+   | `IOS_CERT_P12_BASE64` | `p12.b64` 的內容 |
+   | `IOS_CERT_PASSWORD` | 步驟 2 的 `.p12` 密碼 |
+   | `IOS_PROFILE_BASE64` | `profile.b64` 的內容 |
+
+5. Actions → **iOS ad-hoc IPA** → Run workflow，完成後在 Artifacts 下載 `app-release-ipa`，複製成 `files/app-release.ipa`。
+
+`dist.key`、`dist.p12`、描述檔請妥善保管，不要提交到儲存庫。新增測試機時要在 Apple Developer 重新產生並下載描述檔，更新 `IOS_PROFILE_BASE64`。
+
 ### iOS（有 Mac 時）
 
 在 Mac 上打包，匯出方式要選 **ad-hoc** 或 **enterprise**（App Store / development 匯出的 IPA 無法用 OTA 安裝）：
