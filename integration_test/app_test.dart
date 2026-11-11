@@ -45,8 +45,10 @@ void main() {
     expect(find.text('請輸入電子郵件或帳號'), findsOneWidget);
     await binding.takeScreenshot('03_empty_account_toast');
 
-    // 等提示條消失（預設 4 秒）。iOS 鍵盤彈出時提示條會被擠到密碼欄的眼睛圖示上，擋住點擊
-    await tester.pump(const Duration(seconds: 5));
+    // 主動清掉提示條。iOS 鍵盤彈出時提示條會被擠到密碼欄的眼睛圖示上，擋住點擊
+    // （不靠等計時器，避免時間相關的不穩定）
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first))
+        .clearSnackBars();
     await settle(tester);
     expect(find.text('請輸入電子郵件或帳號'), findsNothing);
 
