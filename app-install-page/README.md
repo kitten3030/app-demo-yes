@@ -1,6 +1,6 @@
 # App 安裝頁
 
-簡易的內部測試版安裝頁：Android 直接下載 APK；iOS 主流程是以 `itms-services` 安裝 ad-hoc 簽署的 `app-release.ipa`（需付費 Apple Developer 帳號），備用方案是下載未簽署的 `app-unsigned.ipa` 用 Sideloadly 側載。頁面上有「分享本頁 QR code」讓別台手機掃描開啟，也能用相機「掃描別的 QR code」。
+簡易的內部測試版安裝頁：Android 直接下載 APK；iOS 若另外提供 ad-hoc 簽署的 `app-release.ipa`，可用 `itms-services` 安裝（專案目前不再提供 IPA 打包流程，iOS 測試改用 Intel Mac 模擬器，見「iOS：Intel Mac 模擬器安裝」）。頁面上有「分享本頁 QR code」讓別台手機掃描開啟，也能用相機「掃描別的 QR code」。
 
 只需要 Node.js 18+，沒有任何 npm 套件要安裝。
 
@@ -14,11 +14,11 @@
 | `config.json`          | App 名稱、版本、套件識別碼、apk/ipa 檔名、連接埠             |
 | `public/`              | 安裝頁（`index.html`、`style.css`、`app.js` 安裝與分享 QR、`scan.js` 掃描 QR） |
 | `public/vendor/`       | 內建不依賴 CDN：QR code 產生器 [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)（MIT）、QR code 解碼器 [jsQR](https://github.com/cozmo/jsQR)（Apache-2.0） |
-| `files/`               | 放 `app-release.apk`、`app-release.ipa`（ad-hoc，itms-services 用）、`app-unsigned.ipa`（未簽署，Sideloadly 備用）（已加入 `.gitignore`） |
+| `files/`               | 放 `app-release.apk`，以及選用的 `app-release.ipa`（ad-hoc，itms-services 用）、`app-unsigned.ipa`（已加入 `.gitignore`） |
 
 ## 使用
 
-1. 把安裝檔放進 `files/`，檔名要和 `config.json` 的 `android.file`、`ios.file`、`ios.sideloadFile` 一致（預設 `app-release.apk`、`app-release.ipa`、`app-unsigned.ipa`）。沒放的檔案，對應按鈕會停用並顯示「尚未上傳安裝檔」。
+1. 把安裝檔放進 `files/`，檔名要和 `config.json` 的 `android.file`、`ios.file`、`ios.sideloadFile` 一致（預設 `app-release.apk`、`app-release.ipa`、`app-unsigned.ipa`；iOS 兩個為選用）。沒放的檔案，對應按鈕會停用並顯示「尚未上傳安裝檔」。
 2. 發行新版時更新 `config.json` 的 `version`、`build`（iOS 的 manifest 會用到）。
 3. 啟動：
 
@@ -40,122 +40,76 @@ copy C:\dev\app-demo-yun-lin-yes\build\app\outputs\flutter-apk\app-release.apk f
 
 release 版目前以 debug 金鑰簽署，僅供內部測試。
 
-### iOS 總覽
+### iOS：Intel Mac 模擬器安裝
 
-| 方案 | 檔案 | 安裝頁按鈕 | 需要 |
-| ---- | ---- | ---------- | ---- |
-| **主流程**：ad-hoc + `itms-services` | `files/app-release.ipa` | 「安裝 iOS App」 | 付費 Apple Developer 帳號、測試機 UDID 已加入描述檔、https 網址、Safari |
-| **備用**：未簽署 IPA + Sideloadly | `files/app-unsigned.ipa` | 「備用：Sideloadly 側載」內的「下載未簽署 IPA」 | 電腦（Windows + Sideloadly）、個人 Apple ID，不需付費帳號 |
+iOS 測試改在 Mac 的 Xcode 模擬器進行，不需要 Apple Developer 帳號、憑證、描述檔或 UDID。要安裝的是**模擬器版 `Runner.app`**（不是 IPA）。
 
-兩個檔案可以同時存在：UDID 已登記的手機走主流程；沒登記或安裝失敗的改走備用。沒放 `app-release.ipa` 時，主按鈕會停用，頁面提示改用備用方案。
+#### 一、用 GitHub Actions 建置模擬器版
 
-主流程的打包有三種做法，請擇一（見下方各「iOS 主流程」章節）：GitHub Actions（目前使用）、Codemagic、有 Mac 時自行打包。
+workflow 是 `app-demo/.github/workflows/ios-simulator.yml`，不需要任何 Secrets：
 
-### iOS 備用：未簽署 IPA + Sideloadly 側載
+1. 前提：`app-demo` 已推到 `https://github.com/kitten3030/app-demo-yes` 的 `master`。
+2. Actions → **iOS simulator** → Run workflow，分支選 `master`（約 10～20 分鐘）。
+3. 它會用 `xcodebuild` 建置 **arm64 + x86_64 通用版**（Intel Mac 與 Apple Silicon Mac 的模擬器都能用），並用 `lipo` 確認 `Runner`、`Flutter.framework`、`App.framework` 都含 `x86_64`，缺少就讓 workflow 失敗。
+4. 完成後下載 Artifacts：
+   - `ios-simulator-app`：`Runner-simulator.app.zip`（要安裝的檔案）
+   - `ios-simulator-screenshot`：App 在雲端模擬器啟動後的截圖
 
-#### 一、用 GitHub Actions 產生未簽署 IPA
-
-workflow 檔案是 `app-demo/.github/workflows/ios-unsigned.yml`，在 GitHub 的 macOS runner 執行 `flutter build ios --release --no-codesign`，再封裝成 `app-unsigned.ipa`。不需要 Apple 帳號、憑證或 Secrets。
-
-前提：`app-demo` 已推到 GitHub（目前為 `https://github.com/kitten3030/app-demo-yes`）。
-
-1. 打開儲存庫的 **Actions** 分頁：`https://github.com/kitten3030/app-demo-yes/actions`。
-2. 左邊 Workflows 清單點 **iOS unsigned IPA**。
-3. 右邊藍色橫幅（This workflow has a `workflow_dispatch` event trigger）旁按 **Run workflow**，分支選 `master`，再按綠色的 **Run workflow**。
-4. 重新整理頁面，會出現一筆執行紀錄（黃色轉圈），點進去可看進度，約 10～20 分鐘。
-5. 變成綠色勾勾後，捲到該次執行頁面最下方的 **Artifacts**，下載 `app-unsigned-ipa`（zip）。
-6. 解壓縮得到 `app-unsigned.ipa`，放進 `app-install-page/files/`（檔名需與 `config.json` 的 `ios.sideloadFile` 一致）。`files/` 已加入 `.gitignore`，不會進版控。
-
-也可以用 GitHub CLI 執行與下載：
+也可以用 GitHub CLI：
 
 ```bash
-gh workflow run "iOS unsigned IPA" -R kitten3030/app-demo-yes --ref master
-gh run list -R kitten3030/app-demo-yes --workflow "iOS unsigned IPA" --limit 1
-gh run download <run-id> -R kitten3030/app-demo-yes -n app-unsigned-ipa -D files
+gh workflow run "iOS simulator" -R kitten3030/app-demo-yes --ref master
+gh run list -R kitten3030/app-demo-yes --workflow "iOS simulator" --limit 1
+gh run download <run-id> -R kitten3030/app-demo-yes -n ios-simulator-app -D .
 ```
 
-執行失敗（紅色叉叉）時，點進該次執行，展開紅叉的步驟看最後幾行錯誤。最常出問題的是「打包（不簽署）」這一步，通常是 Flutter 版本（`pubspec.yaml` 要求 Dart `^3.13.5`）或 CocoaPods 相依問題。
+#### 二、在 Mac 的 Xcode 模擬器安裝
 
-注意：私有庫的 macOS 分鐘數以 10 倍計算；公開庫不限。
+前提：Mac 已安裝 Xcode 並開啟過一次（同意授權、安裝 iOS 模擬器）。macOS 12.7.6（Monterey）的 Intel Mac 最高只能裝 Xcode 14.2（iOS 16.2 模擬器）；專案最低支援 iOS 15.0。
 
-#### 二、測試者側載
-
-1. 測試者在安裝頁下載 IPA 到電腦。
-2. 用 Sideloadly + 自己的 Apple ID 簽署並安裝到 iPhone（安裝頁有完整步驟）。
-3. 免費 Apple ID 簽署效期 7 天，到期需重新側載；同一個 Apple ID 最多同時 3 個側載 App。
-
-### iOS 主流程：Codemagic 雲端打包（不需要 Mac）
-
-以下三種打包方式產出的都是 ad-hoc `.ipa`，需要付費 Apple Developer 帳號；完成後放進 `files/app-release.ipa`，安裝頁的「安裝 iOS App」按鈕就會啟用。
-
-`app-demo/codemagic.yaml` 已設定好 `ios-adhoc` workflow。一次性設定：
-
-1. **Apple Developer 帳號**（付費，個人或公司）。到 [developer.apple.com](https://developer.apple.com/account) → Certificates, IDs & Profiles：
-   - **Identifiers**：新增 App ID，Bundle ID 填 `tw.com.pst.yesAppDemo`（Explicit）。
-   - **Devices**：註冊要測試的 iPhone UDID（最多 100 台）。UDID 可在 Mac Finder、或 iPhone 開 [get.udid.io](https://get.udid.io) 取得。
-2. **App Store Connect API key**：[App Store Connect](https://appstoreconnect.apple.com/access/integrations/api) → 使用者與存取 → 整合 → App Store Connect API → 產生金鑰（權限選 **Admin** 或 **App Manager**），下載 `.p8`（只能下載一次），記下 Issuer ID 與 Key ID。
-3. **Codemagic**：註冊並連到儲存庫（見下方注意事項）→ Teams → Integrations → Developer Portal → Connect，名稱填 `codemagic`，貼上 Issuer ID、Key ID 並上傳 `.p8`。
-4. 在 Codemagic 的 app 頁選 `ios-adhoc` workflow → **Start new build**。Codemagic 會自動建立 ad-hoc 憑證與描述檔，不需自己準備 `.p12`。
-5. 建置完成後下載 `.ipa`，複製成 `files/app-release.ipa`。
-
-新增測試機後，要在 Apple Developer 註冊 UDID，再重跑一次 build（描述檔會自動更新）。
-
-注意：儲存庫 remote 是內網 GitLab（`192.168.5.9`），Codemagic 雲端連不到。可選：把程式碼另推一份到 GitHub / GitLab.com / Bitbucket 私有庫給 Codemagic 使用，或在 Codemagic 用 ZIP/「Other」方式上傳原始碼。
-
-### iOS 主流程：GitHub Actions 雲端打包（不需要 Mac）
-
-`app-demo/.github/workflows/ios-adhoc.yml` 在 GitHub 的 macOS runner 上打包。需先把 `app-demo` 推到 GitHub 私有庫（內網 GitLab 連不到雲端）。與 Codemagic 不同，這裡不會自動簽署，要自己準備憑證與描述檔：
-
-1. Apple Developer：建立 App ID `tw.com.pst.yesAppDemo`、註冊測試機 UDID（同 Codemagic 章節）。
-2. **建立 Apple Distribution 憑證（Windows 用 Git Bash 的 openssl）**：
-
-   ```bash
-   openssl genrsa -out dist.key 2048
-   openssl req -new -key dist.key -out dist.csr -subj "/emailAddress=你的Apple信箱/CN=你的名字/C=TW"
-   ```
-
-   Certificates → ＋ → **Apple Distribution**，上傳 `dist.csr`，下載 `distribution.cer`，再轉成 `.p12`：
-
-   ```bash
-   openssl x509 -inform DER -in distribution.cer -out distribution.pem
-   openssl pkcs12 -export -legacy -inkey dist.key -in distribution.pem -out dist.p12 -password pass:自訂密碼
-   ```
-
-   `-legacy` 是必要的：OpenSSL 3 預設的 PKCS#12 加密，macOS 的 `security import` 讀不了（會報 `MAC verification failed`）。若 openssl 不認得 `-legacy`，改用 `-keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1` 取代它。
-
-3. **建立描述檔**：Profiles → ＋ → **Ad Hoc**，選 App ID、剛建的憑證與所有測試機，下載 `.mobileprovision`。
-4. **轉 base64 並設成 GitHub Secrets**（Settings → Secrets and variables → Actions）：
-
-   ```bash
-   base64 -w0 dist.p12 > p12.b64
-   base64 -w0 profile.mobileprovision > profile.b64
-   ```
-
-   | Secret | 內容 |
-   | --- | --- |
-   | `IOS_CERT_P12_BASE64` | `p12.b64` 的內容 |
-   | `IOS_CERT_PASSWORD` | 步驟 2 的 `.p12` 密碼 |
-   | `IOS_PROFILE_BASE64` | `profile.b64` 的內容 |
-
-5. Actions → **iOS ad-hoc IPA** → Run workflow，完成後在 Artifacts 下載 `app-release-ipa`，複製成 `files/app-release.ipa`。
-
-`dist.key`、`dist.p12`、描述檔請妥善保管，不要提交到儲存庫。新增測試機時要在 Apple Developer 重新產生並下載描述檔，更新 `IOS_PROFILE_BASE64`。
-
-### iOS 主流程：有 Mac 時自行打包
-
-在 Mac 上打包，匯出方式要選 **ad-hoc** 或 **enterprise**（App Store / development 匯出的 IPA 無法用 OTA 安裝）：
+先把 zip 複製到 Mac，在 zip 所在資料夾執行：
 
 ```bash
-flutter build ipa --export-method ad-hoc
+ditto -x -k Runner-simulator.app.zip .
 ```
 
-把產出的 `.ipa` 複製成 `files/app-release.ipa`。
+```bash
+xcrun simctl list devices available
+```
 
-- `config.json` 的 `ios.bundleId` 必須和 IPA 的 Bundle ID 一致（`app-demo` 目前是 `tw.com.pst.yesAppDemo`），否則 iOS 會安裝失敗。
-- ad-hoc：安裝的 iPhone 的 UDID 必須已加入描述檔。enterprise 則沒有此限制。
-- 第一次安裝後，到「設定 → 一般 → VPN 與裝置管理」信任開發者，App 才能開啟。
+從清單挑一台 iPhone，把下面的 `<UDID>` 換成它的 UDID（括號內的那串）：
+
+```bash
+open -a Simulator
+```
+
+```bash
+xcrun simctl boot <UDID>
+```
+
+```bash
+xcrun simctl install <UDID> Runner.app
+```
+
+```bash
+xcrun simctl launch <UDID> tw.com.pst.yesAppDemo
+```
+
+也可以在模擬器開機後，直接把 `Runner.app` 拖到模擬器視窗安裝。
+
+#### 注意事項
+
+- **不要用 `unzip`**：這個 zip 是用 `ditto` 封裝的，用 `ditto -x -k` 解壓才不會弄壞 `.app` 內的符號連結。
+- 模擬器名稱依 Xcode 版本而不同，先用 `simctl list` 看實際有哪些，不要直接照抄機型名稱。
+- `boot` 回報該裝置已開機可略過；`install` 出現 `Unable to lookup in current state: Shutdown` 代表還沒開機。
+- 這個 App 是用較新的 Xcode 建置，在 Xcode 14.2（iOS 16.2）的模擬器上是否能順利啟動，**尚未在 Intel Mac 上實測**；失敗時請保留完整錯誤訊息。
+- 這是 debug 版；相機、麥克風、推播在模擬器上測不到。
+- 登入頁預設連「本機」環境，Mac 上沒有後端會登入失敗，請切到「測試機」。
+- 模擬器版不是 IPA，不能放進 `files/` 給安裝頁使用。
 
 ## iOS 安裝原理與限制
+
+> 以下只適用於另外提供 ad-hoc 簽署 `app-release.ipa` 的情況；專案目前不再提供 IPA 打包流程。
 
 主流程「安裝 iOS App」按鈕的連結是：
 
