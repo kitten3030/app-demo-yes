@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'app_theme.dart';
@@ -274,6 +275,7 @@ class _HomePageState extends State<HomePage> {
   /// 處理網頁傳來的訊息：
   /// {"type": "tokenExpired"}            → 登出
   /// {"type": "getLocation", "cbId": ""} → 取得 GPS，結果以 window.__yesAppCallback(cbId, result) 回傳
+  /// {"type": "openExternal", "url": ""} → 以裝置內建瀏覽器開啟外部連結（網頁的 target="_blank" 連結）
   Future<void> _onWebMessage(JavaScriptMessage msg) async {
     try {
       final data = jsonDecode(msg.message) as Map<String, dynamic>;
@@ -282,10 +284,21 @@ class _HomePageState extends State<HomePage> {
           await _logout();
         case 'getLocation':
           await _replyLocation(data['cbId'] as String);
+        case 'openExternal':
+          await _openExternal(data['url']);
       }
     } catch (_) {
       // 非 JSON 或格式不符，忽略
     }
+  }
+
+  /// 以裝置的瀏覽器開啟網頁要求的外部連結。
+  /// WebView 沒有分頁，target="_blank" 會直接在 WebView 內切換頁面而回不到地圖，所以改交給系統瀏覽器。
+  /// 只允許 http(s)，避免網頁內容藉此觸發任意 scheme（intent://、file:// 等）。
+  Future<void> _openExternal(Object? raw) async {
+    final uri = raw is String ? Uri.tryParse(raw) : null;
+    if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   /// 取得定位並回傳給網頁；失敗時回 {ok:false, error:原因}
