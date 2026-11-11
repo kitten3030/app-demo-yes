@@ -69,7 +69,9 @@ jobs:
           xcrun simctl launch "$SIM_UDID" "$BUNDLE_ID"
           sleep 15
           # App 若啟動後崩潰，process 不會留在 launchctl 清單中
-          if ! xcrun simctl spawn "$SIM_UDID" launchctl list | grep -q "$BUNDLE_ID"; then
+          # 先存成變數再 grep：直接 `| grep -q` 在 pipefail 下會因 SIGPIPE 誤判為失敗
+          SERVICES="$(xcrun simctl spawn "$SIM_UDID" launchctl list)"
+          if ! grep -q "$BUNDLE_ID" <<<"$SERVICES"; then
             echo "::error::App 啟動後已結束（可能崩潰）"
             exit 1
           fi
