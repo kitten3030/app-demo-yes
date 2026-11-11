@@ -68,6 +68,11 @@ void main() {
     await binding.takeScreenshot('04_filled_password_visible');
 
     // 5. 按登入：localhost 沒有後端，應該顯示登入失敗並結束載入狀態
+    // 先收起鍵盤：iOS 鍵盤會縮小可視區域，把登入按鈕擠到鍵盤底下而點不到
+    FocusManager.instance.primaryFocus?.unfocus();
+    await settle(tester);
+    await tester.ensureVisible(find.text('登入'));
+    await settle(tester);
     await tester.tap(find.text('登入'));
     var failed = false;
     for (var i = 0; i < 20 && !failed; i++) {
