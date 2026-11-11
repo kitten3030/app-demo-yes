@@ -45,11 +45,16 @@ void main() {
     expect(find.text('請輸入電子郵件或帳號'), findsOneWidget);
     await binding.takeScreenshot('03_empty_account_toast');
 
-    // 主動清掉提示條。iOS 鍵盤彈出時提示條會被擠到密碼欄的眼睛圖示上，擋住點擊
-    // （不靠等計時器，避免時間相關的不穩定）
+    // 主動移除提示條。iOS 鍵盤彈出時提示條會被擠到密碼欄的眼睛圖示上，擋住點擊。
+    // removeCurrentSnackBar 是立即移除（clearSnackBars 只是播退場動畫）；
+    // 再輪詢到它真的消失，避免依賴固定等待時間。
     ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first))
-        .clearSnackBars();
-    await settle(tester);
+        .removeCurrentSnackBar();
+    for (var i = 0;
+        i < 20 && find.text('請輸入電子郵件或帳號').evaluate().isNotEmpty;
+        i++) {
+      await settle(tester, 300);
+    }
     expect(find.text('請輸入電子郵件或帳號'), findsNothing);
 
     // 4. 輸入假帳密 + 切換密碼可見
