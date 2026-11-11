@@ -3,7 +3,8 @@
 #
 # 產出（Artifacts）：
 #   ios-simulator-screenshot   啟動後的截圖（PNG）
-#   ios-simulator-app          Runner.app（zip，可在有 Xcode 的 Mac 用 simctl install 安裝）
+#   ios-simulator-app          Runner.app（zip，arm64 + x86_64 通用，Intel / Apple Silicon Mac
+#                              的 Xcode 模擬器都可用 simctl install 安裝）
 #
 # 限制：無頭執行，只能看啟動後畫面與日誌，無法互動；相機、麥克風、推播模擬器本來就測不到。
 name: iOS simulator
@@ -32,10 +33,36 @@ jobs:
 
       - run: flutter pub get
 
-      - name: 建置模擬器版
+      # 建置 arm64 + x86_64 的通用模擬器版：arm64 給雲端 runner / Apple Silicon Mac，
+      # x86_64 給 Intel Mac。runner 是 arm64，`flutter build ios --simulator` 只會產生 arm64，
+      # 所以改成先 --config-only 產生設定，再直接呼叫 xcodebuild 指定兩種架構。
+      - name: 建置模擬器版（arm64 + x86_64）
         run: |
-          flutter build ios --simulator --debug
+          set -euo pipefail
+          flutter build ios --simulator --debug --config-only
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner \
+            -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
+            -derivedDataPath build/xcode-derived build
+          rm -rf build/ios/iphonesimulator
+          mkdir -p build/ios/iphonesimulator
+          cp -R build/xcode-derived/Build/Products/Debug-iphonesimulator/Runner.app \
+            build/ios/iphonesimulator/Runner.app
           test -d build/ios/iphonesimulator/Runner.app
+
+      - name: 確認包含 x86_64（Intel Mac 模擬器）
+        run: |
+          set -euo pipefail
+          APP=build/ios/iphonesimulator/Runner.app
+          for BIN in "$APP/Runner" "$APP/Frameworks/Flutter.framework/Flutter" "$APP/Frameworks/App.framework/App"; do
+            ARCHS="$(lipo -archs "$BIN")"
+            echo "$BIN: $ARCHS"
+            case " $ARCHS " in
+              *" x86_64 "*) ;;
+              *) echo "::error::$BIN 沒有 x86_64 架構（$ARCHS）"; exit 1 ;;
+            esac
+          done
 
       - name: 選擇並啟動 iPhone 模擬器
         run: |
