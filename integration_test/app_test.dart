@@ -10,6 +10,8 @@ import 'package:yes_app_demo/main.dart';
 /// build/integration_screenshots/。
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  // 點擊若沒打到目標（被其他元件擋住）就直接失敗，不要只印警告
+  WidgetController.hitTestWarningShouldBeFatal = true;
 
   Future<void> settle(WidgetTester tester, [int ms = 600]) =>
       tester.pump(Duration(milliseconds: ms));
@@ -42,6 +44,11 @@ void main() {
     await settle(tester);
     expect(find.text('請輸入電子郵件或帳號'), findsOneWidget);
     await binding.takeScreenshot('03_empty_account_toast');
+
+    // 等提示條消失（預設 4 秒）。iOS 鍵盤彈出時提示條會被擠到密碼欄的眼睛圖示上，擋住點擊
+    await tester.pump(const Duration(seconds: 5));
+    await settle(tester);
+    expect(find.text('請輸入電子郵件或帳號'), findsNothing);
 
     // 4. 輸入假帳密 + 切換密碼可見
     await tester.enterText(find.byType(TextField).at(0), 'demo@example.com');
